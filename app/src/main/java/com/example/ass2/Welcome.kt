@@ -35,6 +35,8 @@ import android.content.ContentValues
 
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import androidx.compose.material3.Button
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
@@ -70,10 +72,15 @@ class ActivityDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATAB
         }
         writableDatabase.insert(TABLE_NAME, null, values)
     }
+
+    fun clearActivityLogs() {
+        writableDatabase.delete(TABLE_NAME, null, null)
+    }
 }
 @Composable
 fun WelcomeScreen() {
     val currentTime = remember { mutableStateOf(Calendar.getInstance().time) }
+    val activityLogs = remember { mutableStateOf(listOf<String>()) }
 
     // Function to update time every second
     LaunchedEffect(Unit) {
@@ -93,7 +100,7 @@ fun WelcomeScreen() {
 
         GreetingMessage(currentTime.value)
         ActivityTracker()
-        DisplayActivityLogs(ActivityDatabaseHelper(LocalContext.current))
+        DisplayActivityLogs(ActivityDatabaseHelper(LocalContext.current), activityLogs)
 
     }
 
@@ -113,7 +120,7 @@ fun BackgroundImage(painter: Painter) {
 // Constants for threshold values
 private const val THRESHOLD_RUNNING = 15.0
 private const val THRESHOLD_WALKING = 10.0
-private const val THRESHOLD_VEHICLE = 20.0
+private const val THRESHOLD_VEHICLE = 25.0
 
 @Composable
 fun ActivityTracker() {
@@ -126,6 +133,7 @@ fun ActivityTracker() {
     val mediaPlayer = remember {
         MediaPlayer.create(context, R.raw.music)
     }
+    var magnitude = 0.toDouble()
 
     fun formatDuration(durationMillis: Long): String {
         val seconds = (durationMillis / 1000) % 60
@@ -149,7 +157,8 @@ fun ActivityTracker() {
                 val z = it.values[2]
 
                 // Example: Calculate magnitude of acceleration
-                val magnitude = Math.sqrt((x * x + y * y + z * z).toDouble())
+                magnitude = Math.sqrt((x * x + y * y + z * z).toDouble())
+
                 if (magnitude > THRESHOLD_VEHICLE){
                     if (activity.value != "Vehicle") {
                         lastActivityStartTime.value = System.currentTimeMillis() // Update last activity start time
@@ -162,7 +171,7 @@ fun ActivityTracker() {
                     }
                 }
                 // Example: Determine activity based on magnitude
-                if (magnitude > THRESHOLD_RUNNING) {
+                else if (magnitude > THRESHOLD_RUNNING) {
                     if (activity.value != "Running") {
                         lastActivityStartTime.value = System.currentTimeMillis() // Update last activity start time
                         activityStartTime.value = System.currentTimeMillis()
@@ -204,15 +213,19 @@ fun ActivityTracker() {
         SensorManager.SENSOR_DELAY_NORMAL
     )
 
+
     // Composable UI
-    Row  {
+    Row(modifier = Modifier.padding(26.dp)) {
         if (activity.value=="Still"){
-        Image(painter = painterResource(id = R.drawable.still2), contentDescription = "Still")
+            Image(painter = painterResource(id = R.drawable.still2), contentDescription = "Still")
         }
         else if (activity.value=="Walking"){
-            Column {
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Image(painter = painterResource(id = R.drawable.walk), contentDescription = "Walking")
-                Text(text = "You can do It!! Try Running More Fast")
+                Text(text = "You can do It!! Try Running More Fast", color = Color.White,  modifier = Modifier.padding(top = 16.dp))
             }
 
         }
@@ -243,9 +256,9 @@ fun ActivityTracker() {
 }
 
 @Composable
-fun DisplayActivityLogs(databaseHelper: ActivityDatabaseHelper) {
+fun DisplayActivityLogs(databaseHelper: ActivityDatabaseHelper, activityLogs: MutableState<List<String>>) {
     val context = LocalContext.current
-    val activityLogs = remember { mutableStateOf(listOf<String>()) }
+
 
     // Query the database for activity logs
     LaunchedEffect(Unit) {
@@ -271,12 +284,22 @@ fun DisplayActivityLogs(databaseHelper: ActivityDatabaseHelper) {
         activityLogs.value = logs
     }
 
+    Button(onClick = {
+        activityLogs.value = emptyList()
+        databaseHelper.clearActivityLogs() },
+        modifier = Modifier.padding(vertical = 16.dp)
+
+    ) {
+        Text("Clear Logs")
+    }
     // Display activity logs
-    Column {
+    Column(modifier = Modifier
+        .padding(vertical = 18.dp, horizontal = 20.dp)
+        ) {
         Text(text = "Activity Logs", fontWeight = FontWeight.Bold,
             color = Color.White)
         activityLogs.value.forEach {
-            Text(text = it)
+            Text(text = it, color = Color.White)
         }
     }
 }
