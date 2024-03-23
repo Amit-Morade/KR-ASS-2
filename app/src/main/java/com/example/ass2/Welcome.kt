@@ -35,6 +35,10 @@ import android.content.ContentValues
 
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontFamily
 
 class ActivityDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
@@ -79,6 +83,7 @@ fun WelcomeScreen() {
         }
     }
 
+    BackgroundImage(painter = painterResource(id = R.drawable.bgg))
     // Greeting message
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -94,11 +99,20 @@ fun WelcomeScreen() {
 
 }
 
+@Composable
+fun BackgroundImage(painter: Painter) {
+    Image(
+        painter = painter,
+        contentDescription = null,
+        modifier = Modifier.fillMaxSize(),
+        contentScale = ContentScale.FillBounds
+    )
+}
 
 
 // Constants for threshold values
-private const val THRESHOLD_RUNNING = 5.0
-private const val THRESHOLD_WALKING = 10.5
+private const val THRESHOLD_RUNNING = 15.0
+private const val THRESHOLD_WALKING = 10.0
 private const val THRESHOLD_VEHICLE = 20.0
 
 @Composable
@@ -191,19 +205,19 @@ fun ActivityTracker() {
     )
 
     // Composable UI
-    Row {
+    Row  {
         if (activity.value=="Still"){
         Image(painter = painterResource(id = R.drawable.still2), contentDescription = "Still")
         }
         else if (activity.value=="Walking"){
             Column {
-                Image(painter = painterResource(id = R.drawable.walk), contentDescription = "Still")
+                Image(painter = painterResource(id = R.drawable.walk), contentDescription = "Walking")
                 Text(text = "You can do It!! Try Running More Fast")
             }
 
         }
         else{
-            Image(painter = painterResource(id = R.drawable.run), contentDescription = "Still")
+            Image(painter = painterResource(id = R.drawable.run), contentDescription = "Running")
 
         }
     }
@@ -211,7 +225,10 @@ fun ActivityTracker() {
         Text(
             text = "Current Activity: ${activity.value}",
             fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            fontFamily = FontFamily.Monospace,
+
         )
         DisposableEffect(activity.value) {
             onDispose {
@@ -221,6 +238,7 @@ fun ActivityTracker() {
             }
         }
     }
+
 
 }
 
@@ -255,7 +273,8 @@ fun DisplayActivityLogs(databaseHelper: ActivityDatabaseHelper) {
 
     // Display activity logs
     Column {
-        Text(text = "Activity Logs", fontWeight = FontWeight.Bold)
+        Text(text = "Activity Logs", fontWeight = FontWeight.Bold,
+            color = Color.White)
         activityLogs.value.forEach {
             Text(text = it)
         }
@@ -266,15 +285,26 @@ fun DisplayActivityLogs(databaseHelper: ActivityDatabaseHelper) {
 fun GreetingMessage(currentTime: Date) {
     val formattedDate = SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault()).format(currentTime)
     val formattedTime = SimpleDateFormat("h:mm a", Locale.getDefault()).format(currentTime)
+    Column(
+        modifier = Modifier,
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Current date and time:",
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 16.dp),
+            color = Color.White,
+            fontFamily = FontFamily.Monospace
+        )
 
-    Text(
-        text = "Hello! Current date and time:",
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(bottom = 16.dp)
-    )
+        Text(
+            text = "$formattedDate\n$formattedTime",
+            textAlign = TextAlign.Center,
+            color = Color.White,
+            fontFamily = FontFamily.Monospace,
 
-    Text(
-        text = "$formattedDate\n$formattedTime",
-        textAlign = TextAlign.Center
-    )
+            )
+    }
+
 }
